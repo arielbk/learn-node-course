@@ -1,6 +1,6 @@
 ## What is this?
 
-Just you wait folks!
+Following along with Wes Bos' [Learn Node course](https://learnnode.com/). Diving deeper with Node and building a full-stack app with Express and MongoDB.
 
 ## Sample Data
 
