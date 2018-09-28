@@ -32,17 +32,32 @@ const storeSchema = new mongoose.Schema({
       required: 'You must supply an address',
     }
   },
-
+  photo: String,
 });
 
-storeSchema.pre('save', function(next) {
+storeSchema.pre('save', async function(next) {
   if (!this.isModified('name')) {
     next(); //skip it
     return; // stop the function
   }
   this.slug = slug(this.name);
+  
+  // find other stores that have the same slug
+  const slugRegex = new RegExp(`^(${this.slug})((-[0-9]*$)?)$`, 'i');
+  const storeWithSlug = await this.constructor.find({ slug: slugRegex });
+  if (storeWithSlug.length) {
+    this.slug = `${this.slug}-${storeWithSlug.length + 1}`
+  }
+
   next();
-  // TODO: make it more resilient so that slugs are unique
 });
 
-module.exports = mongoose.model('Store', storeSchema)
+storeSchema.statics.getTagsList = function() {
+  return this.aggregate([
+    { $unwind: '$tags' },
+    { $group: { _id: '$tags', count: { $sum: 1 } } },
+    { $sort: { count: -1 } }
+  ]);
+}
+
+module.exports = mongoose.model('Store', storeSchema);
