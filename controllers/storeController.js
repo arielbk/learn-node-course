@@ -60,7 +60,8 @@ exports.getStores = async (req, res) => {
   const storesPromise = Store
     .find()
     .skip(skip)
-    .limit(limit);
+    .limit(limit)
+    .sort({ created: 'desc' })
 
   const countPromise = Store.count();
 
@@ -177,6 +178,7 @@ exports.heartStore = async (req, res) => {
       // so this will return the query AFTER the update
       { new: true }
     );
+  res.json(user)
 }
 
 exports.getHearts = async (req, res) => {
