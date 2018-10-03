@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Store = mongoose.model('Store');
+const User = mongoose.model('User');
 // multiple form upload types
 const multer = require('multer');
 // middleware for photo manipulation
@@ -126,4 +127,38 @@ exports.searchStores = async (req, res) => {
     })
     .limit(5);
   res.json(stores);
+}
+
+exports.mapStores = async (req,res) => {
+  const coordinates = [req.query.lng, req.query.lat].map(parseFloat);
+  const q = {
+    location: {
+      $near: {
+        $geometry: {
+          type: 'Point',
+          coordinates
+        },
+        // $maxDistance: 10000 // 10km
+      }
+    }
+  }
+
+  const stores = await Store.find(q).select('slug name description location photo').limit(10);
+  res.json(stores);
+}
+
+exports.mapPage = (req, res) => {
+  res.render('map', { title: 'Map' });
+}
+
+exports.heartStore = async (req, res) => {
+  const hearts = req.user.hearts.map(obj => obj.toString());
+  const operator = hearts.includes(req.params.id) ? '$pull' : '$addToSet'; // add to set is like push except ensures each is unique
+  const user = await User
+    .findByIdAndUpdate(req.user._id,
+      { [operator]: { hearts: req.params.id } },
+      // so this will return the query AFTER the update
+      { new: true }
+    );
+  res.json(user);
 }
