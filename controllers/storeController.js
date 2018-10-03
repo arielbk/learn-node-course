@@ -53,9 +53,28 @@ exports.createStore = async (req, res) => {
 };
 
 exports.getStores = async (req, res) => {
+  const page = req.params.page || 1;
+  const limit = 4;
+  const skip = (page * limit) - limit;
   // query the db for a list of all stores
-  const stores = await Store.find();
-  res.render('stores', { title: 'Stores', stores });
+  const storesPromise = Store
+    .find()
+    .skip(skip)
+    .limit(limit);
+
+  const countPromise = Store.count();
+
+  const [stores, count] = await Promise.all([storesPromise, countPromise]);
+
+  const pages = Math.ceil(count / limit);
+  
+  if(!stores.length && skip) {
+    req.flash('info', `You asked for page ${page}, but that doesn't exist. Here is page ${pages} instead.`);
+    res.redirect(`/stores/page/${pages}`);
+    return;
+  }
+
+  res.render('stores', { title: 'Stores', stores, count, pages, page });
 };
 
 const confirmOwner = (store, user) => {
@@ -77,9 +96,7 @@ exports.editStore = async (req, res) => {
 
 exports.updateStore = async (req, res) => {
   // set the location data to be a point
-  // TODO: come back to this if problems arise...
   req.body.location.type = 'Point';
-  // console.log(req);
   // find and upgate the store
   const store = await Store.findOneAndUpdate(
     { _id: req.params.id },
@@ -97,7 +114,7 @@ exports.updateStore = async (req, res) => {
 
 exports.getStoreBySlug = async (req, res, next) => {
   const store = await Store.findOne({ slug: req.params.slug })
-    .populate('author');
+    .populate('author reviews');
   if (!store) return next();
   // res.json(store);
   res.render('store', { store, title: store.name });
@@ -160,5 +177,17 @@ exports.heartStore = async (req, res) => {
       // so this will return the query AFTER the update
       { new: true }
     );
-  res.json(user);
+}
+
+exports.getHearts = async (req, res) => {
+  const stores = await Store.find({
+    _id: { $in: req.user.hearts }
+  });
+
+  res.render('stores', { title: 'Hearted Stores', stores });
+};
+
+exports.getTopStores = async (req, res) => {
+  const stores = await Store.getTopStores();
+  res.render('topStores', { stores, title: '★ Top Stores!' })
 }

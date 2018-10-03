@@ -3,11 +3,13 @@ const router = express.Router();
 const storeController = require('../controllers/storeController');
 const userController = require('../controllers/userController');
 const authController = require('../controllers/authController');
+const reviewController = require('../controllers/reviewController');
 
 const { catchErrors } = require('../handlers/errorHandlers');
 
 router.get('/', storeController.getStores);
 router.get('/stores', catchErrors(storeController.getStores));
+router.get('/stores/page/:page', catchErrors(storeController.getStores));
 router.get('/add', authController.isLoggedIn, storeController.addStore);
 
 router.post('/add', 
@@ -57,7 +59,14 @@ router.post('/account/reset/:token',
 
 router.get('/map', storeController.mapPage);
 
-  // Api
+router.get('/hearts', authController.isLoggedIn, catchErrors(storeController.getHearts));
+router.post('/reviews/:id', authController.isLoggedIn, catchErrors(reviewController.addReview));
+
+router.get('/top', catchErrors(storeController.getTopStores));
+
+// ----------
+//       Api
+// ----------
 
 router.get('/api/search', catchErrors(storeController.searchStores));
 router.get('/api/stores/near', catchErrors(storeController.mapStores));
